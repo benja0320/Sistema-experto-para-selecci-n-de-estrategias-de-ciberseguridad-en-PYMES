@@ -1,0 +1,74 @@
+[
+  {
+    "id": "E101",
+    "nombre": "Implementar Autenticación de Múltiples Factores (2FA/MFA)",
+    "area": "Control de Acceso",
+    "costo": "Bajo",
+    "impacto": "Alto",
+    "justificacion": "Protege contra el robo de contraseñas, uno de los vectores de ataque más comunes y efectivos."
+  },
+  {
+    "id": "E102",
+    "nombre": "Capacitación en Concientización sobre Phishing",
+    "area": "Factor Humano",
+    "costo": "Bajo",
+    "impacto": "Alto",
+    "justificacion": "Entrena a los empleados para que sean la primera línea de defensa contra correos fraudulentos."
+  },
+  {
+    "id": "E103",
+    "nombre": "Gestión de Actualizaciones y Parches de Software",
+    "area": "Gestión de Vulnerabilidades",
+    "costo": "Bajo",
+    "impacto": "Alto",
+    "justificacion": "Cierra agujeros de seguridad conocidos en el software antes de que los atacantes puedan explotarlos."
+  },
+  {
+    "id": "E104",
+    "nombre": "Uso de un Gestor de Contraseñas Corporativo",
+    "area": "Control de Acceso",
+    "costo": "Bajo",
+    "impacto": "Medio",
+    "justificacion": "Evita que los empleados reutilicen contraseñas débiles en múltiples servicios."
+  },
+  {
+    "id": "E201",
+    "nombre": "Implementar VPN para Acceso Remoto",
+    "area": "Seguridad de Red",
+    "costo": "Medio",
+    "impacto": "Alto",
+    "justificacion": "Cifra la conexión de los trabajadores remotos, protegiendo el acceso a la red interna."
+  },
+  {
+    "id": "E202",
+    "nombre": "Política de Backups 3-2-1 (Desconectados y/o en la Nube)",
+    "area": "Recuperación de Desastres",
+    "costo": "Medio",
+    "impacto": "Muy Alto",
+    "justificacion": "Es la única forma de recuperar los datos de forma fiable tras un ataque de ransomware."
+  },
+  {
+    "id": "E203",
+    "nombre": "Firewall de Red (Configuración y Monitoreo)",
+    "area": "Seguridad de Red",
+    "costo": "Medio",
+    "impacto": "Medio",
+    "justificacion": "Filtra el tráfico de red no deseado, bloqueando amenazas conocidas en el perímetro de la red."
+  },
+  {
+    "id": "E301",
+    "nombre": "Implementar un Web Application Firewall (WAF)",
+    "area": "Protección de Aplicaciones",
+    "costo": "Alto",
+    "impacto": "Muy Alto",
+    "justificacion": "Protege aplicaciones web y de comercio electrónico contra ataques específicos como Inyección SQL."
+  },
+  {
+    "id": "E302",
+    "nombre": "Solución EDR (Endpoint Detection and Response)",
+    "area": "Protección de Endpoints",
+    "costo": "Alto",
+    "impacto": "Muy Alto",
+    "justificacion": "Proporciona monitoreo avanzado y respuesta automática a amenazas en computadores y servidores."
+  }
+]
