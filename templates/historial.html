@@ -1,0 +1,10 @@
+<h1>Historial de Diagnósticos</h1>
+<ul>
+  {% for id, fecha in registros %}
+    <li>
+      <a href="{{ url_for('ver_diagnostico', id_diagnostico=id) }}">
+        Diagnóstico {{ id }} - {{ fecha }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
