@@ -24,6 +24,7 @@ def cargar_base_conocimiento(ruta_json=RUTA_JSON):
         print("Error al leer el archivo JSON. Verifica su formato.")
         return {}
 
+catalogo = cargar_base_conocimiento()
 
 def inicializar_bd(ruta_bd=RUTA_BD):
     with sqlite3.connect(ruta_bd) as conn:
@@ -40,31 +41,6 @@ def inicializar_bd(ruta_bd=RUTA_BD):
         conn.commit()
     print("Base de datos SQLite verificada / creada correctamente.")
 
-
-def guardar_diagnostico(respuestas, recomendaciones, reglas_activadas):
-    with sqlite3.connect(RUTA_BD) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO diagnosticos (fecha, respuestas_json, recomendaciones_json, reglas_activadas_json)
-            VALUES (?, ?, ?, ?)
-        """, (
-            datetime.now().isoformat(timespec="seconds"),
-            json.dumps(respuestas, ensure_ascii=False),
-            json.dumps(recomendaciones, ensure_ascii=False),
-            json.dumps(reglas_activadas, ensure_ascii=False)
-        ))
-        conn.commit()
-    print("Diagnóstico guardado correctamente en la base de datos.")
-
-
-def obtener_historial(limit=20):
-    with sqlite3.connect(RUTA_BD) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, fecha FROM diagnosticos ORDER BY id DESC LIMIT ?", (limit,))
-        filas = cursor.fetchall()
-    return filas
-
-
 def obtener_diagnostico(id_diagnostico):
     with sqlite3.connect(RUTA_BD) as conn:
         cursor = conn.cursor()
@@ -79,83 +55,70 @@ def obtener_diagnostico(id_diagnostico):
 
 import json
 
-def inferir(respuestas):
-    recomendaciones = []
-    reglas_activadas = []
+def inferir(respuestas, base_conocimiento):
+    reglas_activadas = set()
 
-    if respuestas.get("mfa") != "on": 
-        reglas_activadas.append("E101")
+    # E101: Implementar MFA
+    if respuestas.get("mfa") != "on":
+        reglas_activadas.add("E101")
 
-        if respuestas.get("usa_cloud") == "on":
-            reglas_activadas.append("E101")
-
-        if respuestas.get("exposicion_remota") == "on":
-            reglas_activadas.append("E201")
-
+    # E102: Capacitación
     if respuestas.get("capacitacion") != "on":
-        reglas_activadas.append("E102")
+        reglas_activadas.add("E102")
 
-        if respuestas.get("mfa") != "on":
-            reglas_activadas.append("E104")
+    # E104: Gestor de Contraseñas
+    if respuestas.get("mfa") != "on" and respuestas.get("capacitacion") != "on":
+        reglas_activadas.add("E104")
 
+    # E103: Gestión de Parches
     if respuestas.get("parches") != "on":
-        reglas_activadas.append("E103")
+        reglas_activadas.add("E103")
 
-        if respuestas.get("logging") != "on":
-            reglas_activadas.append("E302")
+    # E201: Acceso Remoto Seguro (VPN)
+    if respuestas.get("exposicion_remota") != "on":
+        reglas_activadas.add("E201")
+        
+    # E301: Protección de Aplicaciones Web (WAF)
+    if respuestas.get("sector", "").lower() == "comercio" and respuestas.get("usa_cloud") == "on":
+        reglas_activadas.add("E301")
 
-    if respuestas.get("antimalware") != "on":
-        reglas_activadas.append("E302")
+    # E203: Control de acceso/Firewall (Contextual por tamaño)
+    if respuestas.get("tamano", "").lower() == "mediana" and respuestas.get("antimalware") != "on":
+        reglas_activadas.add("E203")
 
+    # E202: Copias de Seguridad (Backups)
     if respuestas.get("backups") != "on":
-        reglas_activadas.append("E202")
+        reglas_activadas.add("E202")
 
-        if respuestas.get("exposicion_remota") == "on":
-            reglas_activadas.append("E202")
-
-    if respuestas.get("exposicion_remota") == "on":
-        reglas_activadas.append("E201")
-
-        if respuestas.get("usa_cloud") == "on":
-            reglas_activadas.append("E201")
-
-    if respuestas.get("usa_cloud") == "on":
-        reglas_activadas.append("E101")
-
-        if respuestas.get("sector") == "comercio":
-            reglas_activadas.append("E301")
-
-    if respuestas.get("logging") != "on":
-        reglas_activadas.append("E302")
-
-    if respuestas.get("activos_criticos") == "on":
-        reglas_activadas.append("E202")
-
-        if respuestas.get("sector") == "salud":
-            reglas_activadas.append("E302")
-
-    if respuestas.get("sector") == "comercio":
-        reglas_activadas.append("E301")
-    elif respuestas.get("sector") == "salud":
-        reglas_activadas.append("E302")
-
-    if respuestas.get("tamano") == "mediana":
-        reglas_activadas.append("E203")
-
-    if respuestas.get("presupuesto") == "bajo":
-
-        reglas_activadas.extend(["E101", "E102", "E103", "E202"])
-
-    reglas_activadas = list(set(reglas_activadas))
-
-    with open("base_conocimiento.json", "r", encoding="utf-8") as f:
-        base = json.load(f)
-
-    for e in base:
-        if e["id"] in reglas_activadas:
-            recomendaciones.append(e)
+    # E302: Detección y Respuesta (EDR/Logging)
+    
+    cond_1_no_antimalware = respuestas.get("antimalware") != "on"
+    cond_2_no_logging = respuestas.get("logging") != "on"
+    
+    # Condición de alto riesgo: Salud, datos críticos Y sin backups
+    cond_3_riesgo_salud = (
+        respuestas.get("sector", "").lower() == "salud" and
+        respuestas.get("activos_criticos") == "on" and
+        respuestas.get("backups") != "on" 
+    )
+    
+    # Si cualquiera de estas condiciones es verdadera, se activa la E302.
+    if cond_1_no_antimalware or cond_2_no_logging or cond_3_riesgo_salud:
+        reglas_activadas.add("E302")
+    
+    recomendaciones = []
+    for regla_id in sorted(list(reglas_activadas)): # Usamos sorted() para un orden consistente
+        # Buscamos la regla en la base de conocimiento cargada
+        if regla_id in base_conocimiento:
+            recomendaciones.append(base_conocimiento[regla_id])
+        else:
+            print(f"Advertencia: Regla '{regla_id}' activada pero no encontrada en base_conocimiento.json")
+    
+    print(f"Opciones activadas: {respuestas}")
+    print(f"Reglas activadas ({len(recomendaciones)}): {reglas_activadas}")
 
     return recomendaciones
+
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -190,21 +153,14 @@ def inicio():
             "logging": logging
         }
 
-        recomendaciones = inferir(respuestas)
+        recomendaciones = inferir(respuestas, catalogo)
 
         return render_template("resultado.html",
                                recomendaciones=recomendaciones)
 
     return render_template("index.html")
 
-@app.route("/historial")
-def historial():
-    registros = obtener_historial()
-    return render_template("historial.html", registros=registros)
-
 if __name__ == "__main__":
-    catalogo = cargar_base_conocimiento()
-
     inicializar_bd()
 
     app.run(debug=True)
